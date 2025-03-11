@@ -21,6 +21,11 @@ const uploadService = async (req, res) => {
         const { s3Client, bucketName } = req.app.locals;
         const result = await uploadFile(s3Client, bucketName, req.file);
 
+        // Add metadata to the result
+        result.ContentType = req.file.mimetype;
+        result.Size = req.file.size;
+        result.UploadDate = new Date().toLocaleDateString();
+
         res.status(200).json(result);
     } catch (error) {
         console.error('Upload error: ', error);

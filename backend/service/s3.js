@@ -3,16 +3,15 @@ const {
     GetObjectCommand,
     DeleteObjectCommand,
     ListObjectsV2Command,
+    HeadObjectCommand,
 } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 
 const generateUniqueFileName = (originalName) => {
-    console.log("original Name: ", originalName);
     const timestamp = Date.now();
     const randomString = crypto.randomBytes(8).toString('hex');
     const extension = originalName.split('.').pop();
-    console.log("extension: ", extension);
 
     return `${timestamp}-${randomString}.${extension}`;
 }
@@ -45,15 +44,6 @@ const getFileUrl = async (s3Client, bucketName, fileName, expiresIn = process.en
     return await getSignedUrl(s3Client, command, { expiresIn });
 };
 
-const listFiles = async (s3Client, bucketName) => {
-    const command = new ListObjectsV2Command({
-        Bucket: bucketName,
-    });
-
-    const response = await s3Client.send(command);
-    return response.Contents || [];
-}
-
 const deleteFile = async (s3Client, bucketName, fileName) => {
     const command = new DeleteObjectCommand({
         Bucket: bucketName,
@@ -62,6 +52,59 @@ const deleteFile = async (s3Client, bucketName, fileName) => {
 
     return await s3Client.send(command);
 }
+
+const listFiles = async (s3Client, bucketName) => {
+    const command = new ListObjectsV2Command({
+        Bucket: bucketName,
+    });
+
+    const response = await s3Client.send(command);
+    const files = response.Contents || [];
+
+    // Get detailed metadata for each file
+    const filesWithMetadata = await Promise.all(
+        files.map(async (file) => {
+            try {
+                const headCommand = new HeadObjectCommand({
+                    Bucket: bucketName,
+                    Key: file.Key,
+                });
+
+                const fileMetadata = await s3Client.send(headCommand);
+
+                // Format upload date
+                const uploadDate = fileMetadata.LastModified
+                    ? new Date(fileMetadata.LastModified).toLocaleDateString()
+                    : 'Unknown';
+
+                // Format file size
+                const fileSizeInBytes = fileMetadata.ContentLength || 0;
+                let fileSize;
+
+                if (fileSizeInBytes < 1024) {
+                    fileSize = `${fileSizeInBytes} B`;
+                } else if (fileSizeInBytes < 1024 * 1024) {
+                    fileSize = `${(fileSizeInBytes / 1024).toFixed(1)} KB`;
+                } else {
+                    fileSize = `${(fileSizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+                }
+
+                return {
+                    ...file,
+                    Size: fileSize,
+                    ContentType: fileMetadata.ContentType || 'Unknown',
+                    UploadDate: uploadDate,
+                    LastModified: fileMetadata.LastModified,
+                };
+            } catch (error) {
+                console.error(`Error getting metadata for ${file.Key}:`, error);
+                return file;
+            }
+        })
+    );
+
+    return filesWithMetadata;
+};
 
 module.exports = {
     uploadFile,
