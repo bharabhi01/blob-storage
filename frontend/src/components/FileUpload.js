@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import { post } from 'aws-amplify/api';
 
 function FileUpload({ onUploadSuccess }) {
     const [uploading, setUploading] = useState(false);
@@ -14,35 +14,79 @@ function FileUpload({ onUploadSuccess }) {
         if (!file) return;
 
         setFileName(file.name);
-        const formData = new FormData();
-        formData.append('file', file);
-
         setUploading(true);
         setUploadError(null);
         setProgress(0);
 
         try {
-            await axios.post(`${process.env.REACT_APP_API_URL}/upload`, formData, {
+            console.log('Uploading file:', file.name);
+            console.log('File type:', file.type);
+            console.log('File size:', file.size);
+
+            // Step 1: Get a pre-signed URL
+            const presignedResponse = await fetch('https://7g4xu2jgp9.execute-api.eu-north-1.amazonaws.com/dev/presigned-upload', {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'multipart/form-data',
+                    'Content-Type': 'application/json',
                 },
-                onUploadProgress: (progressEvent) => {
-                    const percentCompleted = Math.round(
-                        (progressEvent.loaded * 100) / progressEvent.total
-                    );
-                    setProgress(percentCompleted);
-                },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    contentType: file.type
+                })
             });
 
-            onUploadSuccess();
+            if (!presignedResponse.ok) {
+                const errorText = await presignedResponse.text();
+                console.error('Pre-signed URL error response:', errorText);
+                throw new Error(`HTTP error! Status: ${presignedResponse.status}`);
+            }
+
+            const presignedData = await presignedResponse.json();
+            console.log('Pre-signed URL response:', presignedData);
+
+            // Step 2: Upload directly to S3 using the pre-signed URL
+            const uploadResponse = await fetch(presignedData.uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': file.type
+                },
+                body: file
+            });
+
+            if (!uploadResponse.ok) {
+                const errorText = await uploadResponse.text();
+                console.error('Upload error response:', errorText);
+                throw new Error(`Upload failed! Status: ${uploadResponse.status}`);
+            }
+
+            console.log('File uploaded successfully to S3');
+
+            // Simulate progress for better UX
+            let simulatedProgress = 0;
+            const interval = setInterval(() => {
+                simulatedProgress += 10;
+                if (simulatedProgress > 90) {
+                    clearInterval(interval);
+                }
+                setProgress(simulatedProgress);
+            }, 100);
+
+            // After successful upload
             setTimeout(() => {
-                setProgress(0);
-                setFileName('');
-            }, 1500);
+                clearInterval(interval);
+                setProgress(100);
+                onUploadSuccess();
+
+                // Reset after completion
+                setTimeout(() => {
+                    setProgress(0);
+                    setFileName('');
+                }, 1500);
+            }, 1000);
         } catch (error) {
             console.error('Upload error: ', error);
-            setUploadError('Failed to upload file');
-            toast.error('Upload failed');
+            setUploadError('Failed to upload file: ' + error.message);
+            toast.error('Upload failed: ' + error.message);
         } finally {
             setUploading(false);
         }

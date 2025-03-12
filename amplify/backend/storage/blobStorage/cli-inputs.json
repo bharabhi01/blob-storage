@@ -1,0 +1,16 @@
+{
+  "resourceName": "blobStorage",
+  "policyUUID": "6cfe2b0b",
+  "bucketName": "bharabhi01-bucket",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "READ"
+  ],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}

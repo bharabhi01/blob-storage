@@ -1,32 +1,43 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+**/node_modules/
 
-# dependencies
-/frontend/node_modules
-/backend/node_modules
-/.pnp
-.pnp.js
+# Production build
+**/build/
+**/dist/
 
-# testing
-/coverage
-
-# production
-/build
-
-# misc
-.DS_Store
+# Environment variables
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+/frontend/src/aws-exports.js
+/frontend/src/amplifyconfiguration.json
+/frontend/.env.example
+/backend/.env.example
 
+# Amplify
+amplify/#current-cloud-backend/
+amplify/backend/amplify-meta.json
+amplify/backend/awscloudformation/
+amplify/team-provider-info.json
+.amplify/
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-/frontend/.env
-/backend/.env
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
 
-.env
+# OS files
+.DS_Store
+Thumbs.db
 
-/frontend/.env.example
-/backend/.env.example
+# Debug logs
+debug.log

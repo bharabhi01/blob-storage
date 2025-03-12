@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import FilePreview from './FilePreview';
+import { get } from 'aws-amplify/api';
 
 function FileList({ files, onDelete }) {
+    console.log('Files received in FileList:', files);
     const [viewUrls, setViewUrls] = useState({});
     const [loading, setLoading] = useState({});
     const [selectedFile, setSelectedFile] = useState(null);
@@ -15,12 +16,18 @@ function FileList({ files, onDelete }) {
 
             setLoading(prev => ({ ...prev, [file.Key]: true }));
 
-            // Get a new URL even if we already have one (it might be expired)
-            const response = await axios.get(`${process.env.REACT_APP_API_URL}/${file.Key}`);
+            // Use direct fetch instead of Amplify API
+            const response = await fetch(`https://7g4xu2jgp9.execute-api.eu-north-1.amazonaws.com/dev/${file.Key}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const responseData = await response.json();
 
             setViewUrls(prev => ({
                 ...prev,
-                [file.Key]: response.data.fileUrl,
+                [file.Key]: responseData.fileUrl,
             }));
 
             // Only set selected file after URL is loaded
@@ -36,6 +43,7 @@ function FileList({ files, onDelete }) {
         }
     };
 
+    // Rest of your component remains unchanged
     const formatFileName = (name) => {
         // Remove timestamp-hash prefix from generated names
         const nameParts = name.split('-');

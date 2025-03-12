@@ -1,0 +1,18 @@
+{
+  "whyContinueWithGen1": "Prefer not to answer",
+  "projectName": "blobstorage",
+  "version": "3.1",
+  "frontend": "javascript",
+  "javascript": {
+    "framework": "react",
+    "config": {
+      "SourceDir": "frontend/src",
+      "DistributionDir": "frontend/build",
+      "BuildCommand": "cd frontend && npm run build",
+      "StartCommand": "cd frontend && npm start"
+    }
+  },
+  "providers": [
+    "awscloudformation"
+  ]
+}
