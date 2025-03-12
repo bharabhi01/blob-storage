@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: s3-storage-backend
+    restart: unless-stopped
+    ports: 
+      - "3001:3001"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+      - PORT=3001
+      - expiresIn=${expiresIn}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - s3-storage-network
+
+  frontend:
+    build: ./frontend
+    container_name: s3-storage-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=/api
+    networks:
+      - s3-storage-network
+
+networks:
+  s3-storage-network:
+    driver: bridge  
