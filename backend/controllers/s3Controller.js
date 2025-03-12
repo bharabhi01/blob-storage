@@ -38,7 +38,8 @@ const uploadService = async (req, res) => {
 const getFileName = async (req, res) => {
     try {
         const { s3Client, bucketName } = req.app.locals;
-        const fileUrl = await getFileUrl(s3Client, bucketName, req.params.fileName);
+        const expiresIn = parseInt(process.env.expiresIn, 10) || 3600;
+        const fileUrl = await getFileUrl(s3Client, bucketName, req.params.fileName, expiresIn);
 
         res.status(200).json({
             fileUrl

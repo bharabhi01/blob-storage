@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 function FilePreview({ fileName, fileUrl, contentType }) {
     const [loading, setLoading] = useState(true);
@@ -14,6 +13,19 @@ function FilePreview({ fileName, fileUrl, contentType }) {
             setLoading(false);
         }
     }, [fileUrl]);
+
+    // Debug function to log URL details
+    useEffect(() => {
+        if (fileUrl) {
+            console.log("Preview URL:", fileUrl);
+            console.log("Content type:", contentType);
+        }
+    }, [fileUrl, contentType]);
+
+    const handleImageError = (e) => {
+        console.error("Image failed to load:", e);
+        setError(`Failed to load image. Check console for details.`);
+    };
 
     if (!canPreview) {
         return (
@@ -31,7 +43,14 @@ function FilePreview({ fileName, fileUrl, contentType }) {
     }
 
     if (error) {
-        return <div className="file-preview error">Error loading preview: {error}</div>;
+        return (
+            <div className="file-preview error">
+                <p>{error}</p>
+                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="download-link">
+                    Try downloading instead
+                </a>
+            </div>
+        );
     }
 
     return (
@@ -48,7 +67,8 @@ function FilePreview({ fileName, fileUrl, contentType }) {
                         src={fileUrl}
                         alt={fileName}
                         className="image-preview"
-                        onError={() => setError('Failed to load image')}
+                        onError={handleImageError}
+                        crossOrigin="anonymous"
                     />
                 ) : isPdf ? (
                     <iframe

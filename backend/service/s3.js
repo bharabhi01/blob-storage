@@ -36,12 +36,20 @@ const uploadFile = async (s3Client, bucketName, file) => {
 };
 
 const getFileUrl = async (s3Client, bucketName, fileName, expiresIn = process.env.expiresIn) => {
-    const command = new GetObjectCommand({
-        Bucket: bucketName,
-        Key: fileName,
-    });
+    try {
+        const expiration = parseInt(expiresIn, 10);
+        const validExpiration = isNaN(expiration) ? 3600 : expiration;
 
-    return await getSignedUrl(s3Client, command, { expiresIn });
+        const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: fileName,
+        });
+
+        return await getSignedUrl(s3Client, command, { expiresIn: validExpiration });
+    } catch (error) {
+        console.error(`Error generating signed URL for ${fileName}:`, error);
+        throw error;
+    }
 };
 
 const deleteFile = async (s3Client, bucketName, fileName) => {
