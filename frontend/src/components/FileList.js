@@ -10,7 +10,12 @@ function FileList({ files, onDelete }) {
 
     const getFileUrl = async (file) => {
         try {
+            // Clear previous selection first
+            setSelectedFile(null);
+
             setLoading(prev => ({ ...prev, [file.Key]: true }));
+
+            // Get a new URL even if we already have one (it might be expired)
             const response = await axios.get(`${process.env.REACT_APP_API_URL}/${file.Key}`);
 
             setViewUrls(prev => ({
@@ -18,7 +23,11 @@ function FileList({ files, onDelete }) {
                 [file.Key]: response.data.fileUrl,
             }));
 
-            setSelectedFile(file);
+            // Only set selected file after URL is loaded
+            setTimeout(() => {
+                setSelectedFile(file);
+            }, 100);
+
         } catch (error) {
             console.error("Error getting file URL: ", error);
             toast.error("Failed to load file preview");
